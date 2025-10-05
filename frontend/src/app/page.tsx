@@ -37,6 +37,7 @@ export default function Home() {
     }
   };
 
+  // --- FUNCIÓN CORREGIDA ---
   const handleExportCSV = async () => {
     if (!lastRequest) return;
     try {
@@ -45,12 +46,17 @@ export default function Home() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `weather_${lastRequest.location}_${lastRequest.date}.csv`;
+      document.body.appendChild(a); // Añadir el enlace al DOM
       a.click();
+      a.remove(); // Limpiar el enlace del DOM
+      window.URL.revokeObjectURL(url); // Liberar memoria
     } catch (err) {
+      setError('Failed to export CSV. Please try again.');
       console.error('Export failed:', err);
     }
   };
 
+  // --- FUNCIÓN CORREGIDA ---
   const handleExportJSON = async () => {
     if (!lastRequest) return;
     try {
@@ -59,8 +65,12 @@ export default function Home() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `weather_${lastRequest.location}_${lastRequest.date}.json`;
+      document.body.appendChild(a); // Añadir el enlace al DOM
       a.click();
+      a.remove(); // Limpiar el enlace del DOM
+      window.URL.revokeObjectURL(url); // Liberar memoria
     } catch (err) {
+      setError('Failed to export JSON. Please try again.');
       console.error('Export failed:', err);
     }
   };
