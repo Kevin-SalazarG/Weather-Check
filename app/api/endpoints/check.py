@@ -31,5 +31,7 @@ def check_weather_suitability(request: CheckRequest):
         score=final_score,
         classification=classification_text,
         justification=justification_text,
+        weather_data=historical_weather,
         request_data=request
     )
+    

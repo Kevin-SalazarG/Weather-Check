@@ -9,12 +9,13 @@ def calculate_suitability_score(weather_data: dict, activity: str):
     }
 
     temp = weather_data["avg_temp_c"]
+    temp_max = weather_data.get("max_temp_c", temp + 5)
     precip = weather_data["avg_precipitation_mmhr"]
     wind = weather_data["avg_wind_speed_kmh"]
     humidity = weather_data["avg_humidity_percent"]
     cloud = weather_data["avg_cloud_cover_percent"]
 
-    if precip > 2.5 or wind > 40 or temp < 5 or temp > 35:
+    if precip > 2.5 or wind > 40 or temp_max > 40 or temp < 0:
         return 1
 
     def get_temp_score(t):
