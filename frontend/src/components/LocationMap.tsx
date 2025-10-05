@@ -1,70 +1,61 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { LatLng } from 'leaflet';
-
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-
-const Popup = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Popup),
-  { ssr: false }
-);
-
-const useMapEvents = dynamic(
-  () => import('react-leaflet').then((mod) => mod.useMapEvents),
-  { ssr: false }
-) as any;
+import 'leaflet/dist/leaflet.css'; // <-- ¡IMPORTANTE! Añade esta línea
 
 interface LocationMapProps {
   onLocationSelect: (location: { lat: number; lng: number; name: string }) => void;
-  selectedLocation?: { lat: number; lng: number };
 }
 
-function LocationSelector({ onLocationSelect }: { onLocationSelect: (latlng: LatLng) => void }) {
-  const MapEvents = useMapEvents;
-  
-  MapEvents({
-    click: (e: any) => {
-      onLocationSelect(e.latlng);
-    },
-  });
-  
+// Componente para centrar el mapa
+function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  map.setView(center, zoom);
   return null;
 }
 
-export default function LocationMap({ onLocationSelect, selectedLocation }: LocationMapProps) {
-  const [mounted, setMounted] = useState(false);
+// Componente para manejar los clics
+function LocationSelector({ onLocationSelect }: { onLocationSelect: (latlng: LatLng) => void }) {
+  useMapEvents({
+    click(e) {
+      onLocationSelect(e.latlng);
+    },
+  });
+  return null;
+}
+
+export default function LocationMap({ onLocationSelect }: LocationMapProps) {
   const [position, setPosition] = useState<[number, number] | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([40, -95]); // Fallback
   const [L, setL] = useState<any>(null);
 
+  // Carga los íconos de Leaflet y la geolocalización del usuario
   useEffect(() => {
-    setMounted(true);
     import('leaflet').then((leaflet) => {
       setL(leaflet.default);
       
+      // Corrige el problema de los íconos por defecto en Next.js
       delete (leaflet.default.Icon.Default.prototype as any)._getIconUrl;
       leaflet.default.Icon.Default.mergeOptions({
-        iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-        iconUrl: '/leaflet/marker-icon.png',
-        shadowUrl: '/leaflet/marker-shadow.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
     });
-  }, []);
 
+    // Pide la ubicación del usuario para centrar el mapa
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMapCenter([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {
+        console.log("Geolocation permission denied. Using default map center.");
+      }
+    );
+  }, []);
+  
   const handleMapClick = async (latlng: LatLng) => {
     setPosition([latlng.lat, latlng.lng]);
     
@@ -94,42 +85,31 @@ export default function LocationMap({ onLocationSelect, selectedLocation }: Loca
     }
   };
 
-  if (!mounted || !L) {
+  if (!L) {
     return (
       <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
         <div className="text-gray-500">Loading map...</div>
       </div>
     );
   }
-
-  const icon = L.icon({
-    iconUrl: '/leaflet/marker-icon.png',
-    iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-    shadowUrl: '/leaflet/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-
+  
   return (
     <div className="h-96 rounded-lg overflow-hidden border border-gray-200">
       <MapContainer 
-        center={[40, -95]} 
-        zoom={4} 
+        center={mapCenter} 
+        zoom={13} 
         style={{ height: '100%', width: '100%' }}
       >
+        <ChangeView center={mapCenter} zoom={13} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <LocationSelector onLocationSelect={handleMapClick} />
         {position && (
-          <Marker position={position} icon={icon}>
+          <Marker position={position}>
             <Popup>
-              Selected Location<br />
-              Lat: {position[0].toFixed(4)}<br />
-              Lng: {position[1].toFixed(4)}
+              Selected Location
             </Popup>
           </Marker>
         )}
