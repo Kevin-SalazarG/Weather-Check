@@ -16,16 +16,11 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
   const [date, setDate] = useState('');
   const [activity, setActivity] = useState('Hiking');
   const [useMap, setUseMap] = useState(false);
+  const [mapSelection, setMapSelection] = useState<string | null>(null);
 
   const activities = [
-    'Hiking',
-    'Cycling',
-    'Picnic',
-    'Running / Outdoor Sports',
-    'Outdoor Market',
-    'Beach',
-    'Camping',
-    'Festival'
+    'Hiking', 'Cycling', 'Picnic', 'Running / Outdoor Sports',
+    'Outdoor Market', 'Beach', 'Camping', 'Festival'
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,17 +31,22 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
   };
 
   const handleLocationFromMap = (locationData: { lat: number; lng: number; name: string }) => {
-    setLocation(locationData.name);
-    setUseMap(false);
+    setMapSelection(locationData.name);
+  };
+
+  const handleConfirmLocation = () => {
+    if (mapSelection) {
+      setLocation(mapSelection);
+      setUseMap(false);
+      setMapSelection(null); // Limpia la selección
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Location
-          </label>
+          <label className="block text-sm font-semibold text-gray-700">Location</label>
           <button
             type="button"
             onClick={() => setUseMap(!useMap)}
@@ -59,11 +59,19 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
         {useMap ? (
           <div className="space-y-3">
             <LocationMap onLocationSelect={handleLocationFromMap} />
-            {location && (
+            {mapSelection && (
               <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm">
-                Selected: {location}
+                Selected: {mapSelection}
               </div>
             )}
+            <button
+              type="button"
+              onClick={handleConfirmLocation}
+              disabled={!mapSelection}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 transition-all"
+            >
+              Confirm Location
+            </button>
           </div>
         ) : (
           <input
@@ -77,10 +85,9 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
         )}
       </div>
 
+      {/* ... El resto del formulario sigue igual ... */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Date
-        </label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
         <input
           type="date"
           value={date}
@@ -91,11 +98,8 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
           required
         />
       </div>
-
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Activity
-        </label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Activity</label>
         <div className="grid grid-cols-2 gap-2">
           {activities.map((act) => (
             <button
@@ -113,23 +117,12 @@ export default function WeatherForm({ onSubmit, loading }: WeatherFormProps) {
           ))}
         </div>
       </div>
-
       <button
         type="submit"
         disabled={loading}
         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
       >
-        {loading ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Analyzing Weather Data...
-          </span>
-        ) : (
-          'Check Weather Suitability'
-        )}
+        {loading ? "Analyzing Weather Data..." : 'Check Weather Suitability'}
       </button>
     </form>
   );
