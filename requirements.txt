@@ -4,4 +4,3 @@ pydantic
 geopy
 requests
 numpy
-python-dotenv
