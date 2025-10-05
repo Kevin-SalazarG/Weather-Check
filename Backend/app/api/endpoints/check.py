@@ -7,7 +7,6 @@ router = APIRouter()
 
 @router.post("/check", response_model=CheckResponse)
 def check_weather_suitability(request: CheckRequest):
-    
     coords = geocoding.get_coords_from_location(request.location)
     if not coords:
         raise HTTPException(status_code=404, detail="Location not found or geocoding service unavailable.")
@@ -17,6 +16,8 @@ def check_weather_suitability(request: CheckRequest):
         lon=coords['longitude'],
         event_date=request.date
     )
+    
+    probabilities = weather_nasa.calculate_extreme_probabilities(historical_weather)
 
     final_score = scoring.calculate_suitability_score(
         weather_data=historical_weather,
@@ -25,13 +26,25 @@ def check_weather_suitability(request: CheckRequest):
 
     classifications = {1: "Not Recommended", 2: "Poor", 3: "Fair", 4: "Good", 5: "Excellent"}
     classification_text = classifications.get(final_score, "Unknown")
-    justification_text = f"The score was calculated based on historical weather averages for the selected date."
+    
+    recommendations = scoring.get_recommendations(
+        weather_data=historical_weather,
+        activity=request.activity,
+        probabilities=probabilities
+    )
+    
+    justification = scoring.generate_justification(
+        weather_data=historical_weather,
+        activity=request.activity,
+        score=final_score
+    )
 
     return CheckResponse(
         score=final_score,
         classification=classification_text,
-        justification=justification_text,
+        justification=justification,
         weather_data=historical_weather,
-        request_data=request
+        request_data=request,
+        probabilities=probabilities,
+        recommendations=recommendations
     )
-    

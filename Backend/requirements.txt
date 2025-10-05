@@ -4,3 +4,5 @@ pydantic
 geopy
 requests
 numpy
+scipy
+python-dateutil
